@@ -242,6 +242,43 @@ NexiaThermostat.prototype = {
 		var error = null;
 		callback(error, this.name);
 	},
+	getCurrentRelativeHumidity: function(callback) {
+		this.log("getCurrentHumidity");
+		request.get({
+      url: this.apiroute + "houses/" + this.houseId,
+      headers: {"Content-Type": "application/json", "X-MobileId": this.xMobileId, "X-ApiKey": this.xApiKey}
+		}, function(err, response, body) {
+			if (!err && response.statusCode == 200) {
+				this.log("response success");
+				var data = JSON.parse(body);
+        // var systemStatus = data.result._links.child[0].data.items[this.thermostatIndex].system_status;
+        var humidity = data.result._links.child[0].data.items[this.thermostatIndex].indoor_humidity;
+       
+        callback(null, humidity);
+			} else {
+				this.log("Error getCurrentHumidity: %s", err);
+				callback(err);
+			}
+		}.bind(this));
+	},
+	getCurrentRelativeHumidityTarget: function(callback) {
+		this.log("getCurrentHumidityTarget");
+		request.get({
+      url: this.apiroute + "houses/" + this.houseId,
+      headers: {"Content-Type": "application/json", "X-MobileId": this.xMobileId, "X-ApiKey": this.xApiKey}
+		}, function(err, response, body) {
+			if (!err && response.statusCode == 200) {
+				this.log("response success");
+				var data = JSON.parse(body);
+        var humidity = data.result._links.child[0].data.items[this.thermostatIndex].settings[7].current_value * 100;
+       
+        callback(null, humidity);
+			} else {
+				this.log("Error getCurrentHumidityTarget: %s", err);
+				callback(err);
+			}
+		}.bind(this));
+	},
 
 	getServices: function() {
 
@@ -253,8 +290,6 @@ NexiaThermostat.prototype = {
 			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
 			.setCharacteristic(Characteristic.Model, this.model)
 			.setCharacteristic(Characteristic.SerialNumber, this.serialNumber);
-
-
 
 		// Required Characteristics
 		this.service
@@ -284,13 +319,20 @@ NexiaThermostat.prototype = {
 		this.service
 			.getCharacteristic(Characteristic.CoolingThresholdTemperature)
 			.on('get', this.getCoolingThresholdTemperature.bind(this))
-      .on('set', this.setCoolingThresholdTemperature.bind(this));
-
+			.on('set', this.setCoolingThresholdTemperature.bind(this));
 
 		this.service
 			.getCharacteristic(Characteristic.HeatingThresholdTemperature)
 			.on('get', this.getHeatingThresholdTemperature.bind(this))
-      .on('set', this.setHeatingThresholdTemperature.bind(this));
+			.on('set', this.setHeatingThresholdTemperature.bind(this));
+	  
+		this.service
+			.getCharacteristic(Characteristic.CurrentRelativeHumidity)
+			.on('get', this.getCurrentRelativeHumidity.bind(this));
+			
+		this.service
+			.getCharacteristic(Characteristic.TargetRelativeHumidity)
+			.on('get', this.getCurrentRelativeHumidityTarget.bind(this));
 
 		this.service
 			.getCharacteristic(Characteristic.Name)
